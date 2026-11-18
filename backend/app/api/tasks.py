@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from app.models.task_activity import TaskActivity
 from app.models.schemas import TaskRequest, TaskResponse, TaskListItem, TaskActivityResponse
 from app.models.task import Task
+
+from app.models.email_message import EmailMessage
 from app.database.db import SessionLocal
 from app.graph.workflow import workforce_graph
 
@@ -150,6 +152,12 @@ def get_task(task_id: str):
                 detail="Task not found"
             )
 
+        email_record = (
+            db.query(EmailMessage)
+            .filter(EmailMessage.task_id == task_record.task_id)
+            .first()
+        )
+
         return TaskResponse(
             task_id=task_record.task_id,
             user_task=task_record.user_task,
@@ -158,6 +166,13 @@ def get_task(task_id: str):
             review_status=task_record.review_status,
             retry_count=task_record.retry_count,
             final_output=task_record.final_output or "",
+            created_at=task_record.created_at,
+            email_source=email_record is not None,
+            email_sender=email_record.sender_email if email_record else None,
+            email_subject=email_record.subject if email_record else None,
+            email_record_id=email_record.id if email_record else None,
+            reply_status=email_record.reply_status if email_record else None,
+            pending_reply=email_record.pending_reply if email_record else None,
         )
 
     finally:
@@ -177,6 +192,21 @@ def get_all_tasks():
             .all()
         )
 
+        task_ids = [task.task_id for task in tasks]
+
+        email_records = (
+            db.query(EmailMessage)
+            .filter(EmailMessage.task_id.in_(task_ids))
+            .all()
+            if task_ids
+            else []
+        )
+
+        emails_by_task_id = {
+            email.task_id: email
+            for email in email_records
+        }
+
         return [
             TaskListItem(
                 task_id=task.task_id,
@@ -185,6 +215,23 @@ def get_all_tasks():
                 review_status=task.review_status,
                 retry_count=task.retry_count,
                 created_at=task.created_at,
+                email_source=task.task_id in emails_by_task_id,
+                email_sender=(
+                    emails_by_task_id[task.task_id].sender_email
+                    if task.task_id in emails_by_task_id else None
+                ),
+                email_subject=(
+                    emails_by_task_id[task.task_id].subject
+                    if task.task_id in emails_by_task_id else None
+                ),
+                email_record_id=(
+                    emails_by_task_id[task.task_id].id
+                    if task.task_id in emails_by_task_id else None
+                ),
+                reply_status=(
+                    emails_by_task_id[task.task_id].reply_status
+                    if task.task_id in emails_by_task_id else None
+                ),
             )
             for task in tasks
         ]

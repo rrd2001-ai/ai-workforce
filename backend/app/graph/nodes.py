@@ -3,6 +3,11 @@ import logging
 from app.agents.manager import manager_plan, manager_review
 from app.agents.worker import worker_execute
 from app.services.activity_logger import log_activity
+from app.security.permissions import (
+    AgentRole,
+    AgentAction,
+    require_permission,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +32,19 @@ def manager_plan_node(state: dict) -> dict:
         state, "Manager Agent", "planning", "started",
         "Manager started analyzing the task."
     )
+
     try:
+        require_permission(AgentRole.MASTER, AgentAction.PLAN_TASK)
+        require_permission(AgentRole.MASTER, AgentAction.DELEGATE_TASK)
+
         result = manager_plan(state)
+
         record_activity(
             state, "Manager Agent", "planning", "completed",
             "Manager generated the execution plan."
         )
         return result
+
     except Exception:
         record_activity(
             state, "Manager Agent", "planning", "failed",
@@ -47,13 +58,21 @@ def worker_execute_node(state: dict) -> dict:
         state, "Worker Agent", "execution", "started",
         "Worker started executing the assigned task."
     )
+
     try:
+        require_permission(
+            AgentRole.WORKER,
+            AgentAction.EXECUTE_ASSIGNED_WORK,
+        )
+
         result = worker_execute(state)
+
         record_activity(
             state, "Worker Agent", "execution", "completed",
             "Worker generated the requested output."
         )
         return result
+
     except Exception:
         record_activity(
             state, "Worker Agent", "execution", "failed",
@@ -67,13 +86,28 @@ def manager_review_node(state: dict) -> dict:
         state, "Manager Agent", "review", "started",
         "Manager started reviewing the Worker output."
     )
+
     try:
+        require_permission(
+            AgentRole.MASTER,
+            AgentAction.REVIEW_OUTPUT,
+        )
+
         result = manager_review(state)
         review_status = result.get("review_status", "pending")
 
         if review_status == "approved":
+            require_permission(
+                AgentRole.MASTER,
+                AgentAction.APPROVE_OUTPUT,
+            )
             message = "Manager approved the Worker output."
+
         else:
+            require_permission(
+                AgentRole.MASTER,
+                AgentAction.REJECT_OUTPUT,
+            )
             message = (
                 "Manager rejected the Worker output. Feedback: "
                 + result.get("review_feedback", "No feedback provided.")
@@ -83,6 +117,7 @@ def manager_review_node(state: dict) -> dict:
             state, "Manager Agent", "review", review_status, message
         )
         return result
+
     except Exception:
         record_activity(
             state, "Manager Agent", "review", "failed",

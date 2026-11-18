@@ -57,6 +57,8 @@ function App() {
   const [taskInput, setTaskInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [sendingReply, setSendingReply] = useState(false)
+  const [replyMessage, setReplyMessage] = useState('')
   const [error, setError] = useState('')
 
   const loadTasks = useCallback(async () => {
@@ -159,6 +161,37 @@ function App() {
       setError(err.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function approveAndSendReply() {
+    if (!taskDetails?.email_record_id || sendingReply) return
+
+    setSendingReply(true)
+    setReplyMessage('')
+    setError('')
+
+    try {
+      const response = await fetch(
+        `${API}/email/${taskDetails.email_record_id}/approve`,
+        { method: 'POST' },
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          result.detail || 'Could not send the email reply.',
+        )
+      }
+
+      setReplyMessage('Reply successfully sent in the original Gmail thread.')
+      await loadTasks()
+      await loadTaskDetails(taskDetails.task_id)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSendingReply(false)
     }
   }
 
@@ -312,6 +345,50 @@ function App() {
             {taskDetails ? (
               <>
                 <p className="selected-task-text">{taskDetails.user_task}</p>
+
+                {taskDetails.email_source && (
+                  <div className="email-details">
+                    <div className="email-source-heading">
+                      <span className="email-source-label">GMAIL REQUEST</span>
+                      <span className={`status-pill ${statusClass(taskDetails.reply_status)}`}>
+                        {taskDetails.reply_status?.replaceAll('_', ' ') || 'received'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span>From</span>
+                      <strong>{taskDetails.email_sender}</strong>
+                    </div>
+                    <div className="detail-row">
+                      <span>Subject</span>
+                      <strong>{taskDetails.email_subject || '(No subject)'}</strong>
+                    </div>
+
+                    {taskDetails.reply_status === 'pending_approval' && (
+                      <div className="pending-reply">
+                        <strong>Generated email reply</strong>
+                        <div className="final-output markdown-body">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {taskDetails.pending_reply || ''}
+                          </ReactMarkdown>
+                        </div>
+                        <button
+                          className="approve-reply-button"
+                          onClick={approveAndSendReply}
+                          disabled={sendingReply}
+                        >
+                          {sendingReply ? 'Sending reply...' : 'Approve & Send Gmail Reply'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {replyMessage && (
+                  <p className="reply-success-message" role="status">
+                    {replyMessage}
+                  </p>
+                )}
+
                 <div className="detail-row">
                   <span>Task ID</span>
                   <code>{taskDetails.task_id}</code>
@@ -361,7 +438,12 @@ function App() {
                   >
                     <span className="task-item-main">
                       <strong>{task.user_task}</strong>
-                      <small>{formatDate(task.created_at)}</small>
+                      <small>
+                        {task.email_source && (
+                          <span className="email-task-label">GMAIL</span>
+                        )}
+                        {formatDate(task.created_at)}
+                      </small>
                     </span>
                     <span className={`status-pill ${statusClass(task.execution_status)}`}>
                       {task.execution_status}

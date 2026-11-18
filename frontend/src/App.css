@@ -784,3 +784,86 @@
   font-weight: 600;
   margin-top: 16px;
 }
+/* Gmail task integration */
+.email-details {
+  margin: 14px 0;
+  padding: 13px;
+  border: 1px solid #e9e7f5;
+  border-radius: 9px;
+  background: #faf9ff;
+}
+
+.email-source-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.email-source-label {
+  color: #6658d2;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+}
+
+.email-task-label {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  color: #6658d2;
+  background: #efedff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.pending-reply {
+  margin-top: 14px;
+}
+
+.pending-reply > strong {
+  display: block;
+  margin-bottom: 9px;
+  color: #42475d;
+  font-size: 11px;
+}
+
+.pending-reply .final-output {
+  max-height: 300px;
+  margin-bottom: 12px;
+  padding: 13px;
+  font-size: 11px;
+}
+
+.approve-reply-button {
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: #6658d2;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.approve-reply-button:hover:not(:disabled) {
+  background: #5143bd;
+}
+
+.approve-reply-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.reply-success-message {
+  padding: 10px 12px;
+  border-radius: 7px;
+  color: #16865f;
+  background: #e7f8f1;
+  font-size: 11px;
+}
