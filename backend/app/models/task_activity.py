@@ -1,7 +1,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
 
 from app.database.db import Base
 from app.models.task import Task
@@ -10,13 +10,20 @@ from app.models.task import Task
 class TaskActivity(Base):
     __tablename__ = "task_activities"
 
-    id = Column(Integer, primary_key=True, index=True)
+    __table_args__ = (
+        Index(
+            "ix_task_activities_task_created",
+            "task_id", "created_at", "id",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True)
 
     task_id = Column(
         String(36),
         ForeignKey("tasks.task_id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
+        index=False,
     )
 
     agent_name = Column(String(50), nullable=False)

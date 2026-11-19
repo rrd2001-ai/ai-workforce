@@ -4,6 +4,7 @@ from typing import TypedDict, Literal
 class WorkforceState(TypedDict, total=False):
     task_id: str
     user_task: str
+    history_context: dict
     execution_plan: list[str]
     worker_assignment: str
     acceptance_criteria: str

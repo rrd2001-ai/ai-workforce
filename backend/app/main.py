@@ -11,6 +11,7 @@ load_dotenv()
 
 from app.api.tasks import router as tasks_router
 from app.api.email import router as email_router
+from app.api.conversations import router as conversations_router
 from app.agents.mail_agent import process_inbox
 from app.services.gmail_service import gmail_is_connected
 from app.database.db import Base, engine
@@ -107,3 +108,4 @@ def health_check():
 
 app.include_router(tasks_router)
 app.include_router(email_router)
+app.include_router(conversations_router)
